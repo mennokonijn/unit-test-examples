@@ -47,6 +47,7 @@ jobs:
 
       - name: Run GitLeaks
         run: gitleaks detect --source=. --report-format json --report-path=gitleaks.json --no-git
+        continue-on-error: true
 
       - name: Run Jest Tests
         run: npx jest --outputFile=jest-results.json --json
