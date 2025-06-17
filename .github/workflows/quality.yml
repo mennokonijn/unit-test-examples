@@ -1,0 +1,60 @@
+name: Quality Metrics Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: javascript
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+
+      - name: Run Jest with Coverage
+        run: npx jest --coverage --outputFile=jest-results.json --json
+  
+
+      - name: Run Trivy Vulnerability Scan
+        run: trivy fs . --format json -o trivy-results.json
+  
+
+      - name: Run Secret Detection
+        run: gitleaks detect --report-format json --report-path=gitleaks.json
+  
+
+      - name: Run Jest Tests
+        run: npx jest --outputFile=jest-results.json --json
+  
+
+      - name: Install SonarScanner
+        run: npm install -g sonarqube-scanner
+  
+
+      - name: Run SonarQube Analysis
+        run: sonar-scanner -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+  
+
+      - name: Post SonarQube Result to Dashboard
+        run: curl -X POST https://your-backend/api/metrics \
+        -H "Content-Type: application/json" \
+        -d @<(jq -n \
+          --arg repo "${{ github.repository }}" \
+          --arg commit "${{ github.sha }}" \
+          --arg tool "SonarQube" \
+          --arg output "$(tail -n 20 sonar-output.log | base64)" \
+          '{repo: $repo, commit: $commit, tool: $tool, rawTextOutput: $output}')
