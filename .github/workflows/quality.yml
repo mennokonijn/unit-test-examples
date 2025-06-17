@@ -29,8 +29,14 @@ jobs:
         run: npx jest --coverage --outputFile=jest-results.json --json
 
 
-      - name: Run Trivy Vulnerability Scan
-        run: trivy fs . --format json -o trivy-results.json
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: json
+          output: trivy-results.json
+
 
 
       - name: Run Secret Detection
