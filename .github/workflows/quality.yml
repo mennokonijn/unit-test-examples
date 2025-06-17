@@ -24,6 +24,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install GitLeaks
+        run: |
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz
+          chmod +x gitleaks
+          sudo mv gitleaks /usr/local/bin/gitleaks
+
+
       - name: Run Trivy Scan
         uses: aquasecurity/trivy-action@master
         with:
@@ -32,24 +40,21 @@ jobs:
           format: json
           output: trivy-results.json
 
-      - name: Install GitLeaks
-        run: |
-          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz -o gitleaks.tar.gz
-          tar -xzf gitleaks.tar.gz
-          chmod +x gitleaks
-          sudo mv gitleaks /usr/local/bin/gitleaks
-      
-
       - name: Run GitLeaks
-        run: gitleaks detect --source=. --report-format json --report-path=gitleaks.json --no-git
+        run: |
+          gitleaks detect --source=. --report-format json --report-path=gitleaks.json --no-git
         continue-on-error: true
 
       - name: Run Jest Tests
-        run: npx jest --outputFile=jest-results.json --json
+        run: |
+          npx jest --coverage --outputFile=jest-results.json --json
+
 
       - name: Install SonarScanner
-        run: npm install -g sonarqube-scanner
+        run: |
+          npm install -g sonarqube-scanner
+
 
       - name: Run SonarQube Analysis
-        run: sonar-scanner -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-
+        run: |
+          sonar-scanner -Dsonar.token=${{ secrets.SONAR_TOKEN }}
