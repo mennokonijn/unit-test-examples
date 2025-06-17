@@ -3,7 +3,7 @@ name: Quality Metrics Pipeline
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   quality-check:
