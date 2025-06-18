@@ -25,4 +25,4 @@ class FortuneTellerDup {
     }
 }
 
-export default FortuneTellerDip;
+export default FortuneTellerDup;
