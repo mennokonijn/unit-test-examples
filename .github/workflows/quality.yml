@@ -51,7 +51,20 @@ jobs:
 
       - name: Run GitLeaks
         run: |
-          gitleaks detect --source=. --exclude .cache,node_modules,dist --report-format json --report-path=gitleaks.json --no-git
+          echo "[allowlist]
+          description = \"Exclude common non-source directories\"
+          paths = [
+          '''\\.cache/''',
+          '''node_modules/''',
+          '''dist/'''
+          ]" > .gitleaks.toml
+          
+          gitleaks detect \
+          --source=. \
+          --config=.gitleaks.toml \
+          --report-format json \
+          --report-path=gitleaks.json \
+          --no-git
         continue-on-error: true
 
       - name: Send GitLeaks results to API
