@@ -108,8 +108,8 @@ jobs:
         run: |
           echo "Waiting for SonarQube analysis..." && \
           while true; do \
-          STATUS=$(curl -s -u ${{ secrets.SONAR_TOKEN }}: "${{ secrets.SONAR_HOST_URL }}/api/ce/component?component=${{ secrets.SONAR_PROJECT_KEY }}" | jq -r '.queue[0].status'); \
-          echo "Current status: $STATUS"; \
+          STATUS=$(curl -s -u ${{ secrets.SONAR_TOKEN }}: "${{ secrets.SONAR_HOST_URL }}/api/ce/component?component=${{ secrets.SONAR_PROJECT_KEY }}" | jq -r '.current.status'); \
+          echo "Current SonarQube status: $STATUS"; \
           if [ "$STATUS" = "SUCCESS" ] || [ "$STATUS" = "FAILED" ]; then break; fi; \
           sleep 5; \
           done
