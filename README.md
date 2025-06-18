@@ -63,3 +63,4 @@ $ npm i && npm run test
 Copyright (c) 2018 Thorsten Frommen
 
 This code is licensed under the [MIT License](/LICENSE).
+
