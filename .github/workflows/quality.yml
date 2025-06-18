@@ -40,14 +40,38 @@ jobs:
           format: json
           output: trivy-results.json
 
+      - name: Send Trivy results to API
+        run: |
+          curl -X POST https://e101-144-178-66-36.ngrok-free.app/api/metrics \
+          -H "Content-Type: application/json" \
+          -H "X-Tool-Name: Trivy" \
+          --data @trivy-results.json
+
+
       - name: Run GitLeaks
         run: |
           gitleaks detect --source=. --report-format json --report-path=gitleaks.json --no-git
         continue-on-error: true
 
+      - name: Send GitLeaks results to API
+        run: |
+          curl -X POST https://e101-144-178-66-36.ngrok-free.app/api/metrics \
+          -H "Content-Type: application/json" \
+          -H "X-Tool-Name: GitLeaks" \
+          --data @gitleaks.json
+
+
       - name: Run Jest Tests
         run: |
           npx jest --coverage --outputFile=jest-results.json --json
+
+
+      - name: Send Jest results to API
+        run: |
+          curl -X POST https://e101-144-178-66-36.ngrok-free.app/api/metrics \
+          -H "Content-Type: application/json" \
+          -H "X-Tool-Name: Jest" \
+          --data @jest-results.json
 
 
       - name: Install SonarScanner
@@ -57,4 +81,23 @@ jobs:
 
       - name: Run SonarQube Analysis
         run: |
-          sonar-scanner -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+          sonar-scanner \
+          -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+
+      - name: Fetch SonarQube results
+        run: |
+          curl -s -u ${{ secrets.SONAR_TOKEN }}: \
+          "${{ secrets.SONAR_HOST_URL }}/api/qualitygates/project_status?projectKey=${{ secrets.SONAR_PROJECT_KEY }}" \
+          -o sonar-results.json
+
+
+      - name: Send SonarQube results to API
+        run: |
+          curl -X POST https://e101-144-178-66-36.ngrok-free.app/api/metrics \
+          -H "Content-Type: application/json" \
+          -H "X-Tool-Name: SonarQube" \
+          --data @sonar-results.json
