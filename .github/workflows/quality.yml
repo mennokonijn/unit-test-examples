@@ -51,7 +51,7 @@ jobs:
 
       - name: Run GitLeaks
         run: |
-          gitleaks detect --source=. --report-format json --report-path=gitleaks.json --no-git
+          gitleaks detect --source=. --exclude .cache,node_modules,dist --report-format json --report-path=gitleaks.json --no-git
         continue-on-error: true
 
       - name: Send GitLeaks results to API

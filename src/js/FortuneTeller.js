@@ -16,7 +16,12 @@ class FortuneTeller {
 	 * @return {string} An answer.
 	 */
 	answer( money = 0 ) {
-		return ( Number( money ) >= 5 ) ? this.oracle.answer() : '';
+
+		if (money >= 5) {
+			return this.oracle.answer();
+		} else {
+			return '';
+		}
 	}
 }
 
