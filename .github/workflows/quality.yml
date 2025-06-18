@@ -104,6 +104,17 @@ jobs:
           -Dsonar.login=${{ secrets.SONAR_TOKEN }}
 
 
+      - name: Wait for SonarQube Analysis to Complete
+        run: |
+          echo "Waiting for SonarQube analysis..." && \
+          while true; do \
+          STATUS=$(curl -s -u ${{ secrets.SONAR_TOKEN }}: "${{ secrets.SONAR_HOST_URL }}/api/ce/component?component=${{ secrets.SONAR_PROJECT_KEY }}" | jq -r '.queue[0].status'); \
+          echo "Current status: $STATUS"; \
+          if [ "$STATUS" = "SUCCESS" ] || [ "$STATUS" = "FAILED" ]; then break; fi; \
+          sleep 5; \
+          done
+
+
       - name: Fetch SonarQube Metrics
         run: |
           curl -s -u ${{ secrets.SONAR_TOKEN }}: \
