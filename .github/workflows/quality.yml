@@ -42,7 +42,7 @@ jobs:
 
       - name: Send Trivy results to API
         run: |
-          curl -X POST https://e101-144-178-66-36.ngrok-free.app/api/metrics \
+          curl -X POST https://ef02-144-178-66-36.ngrok-free.app/api/metrics \
           -H "Content-Type: application/json" \
           -H "X-Tool-Name: Trivy" \
           -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
@@ -69,7 +69,7 @@ jobs:
 
       - name: Send GitLeaks results to API
         run: |
-          curl -X POST https://e101-144-178-66-36.ngrok-free.app/api/metrics \
+          curl -X POST https://ef02-144-178-66-36.ngrok-free.app/api/metrics \
           -H "Content-Type: application/json" \
           -H "X-Tool-Name: GitLeaks" \
           -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
@@ -83,7 +83,7 @@ jobs:
 
       - name: Send Jest results to API
         run: |
-          curl -X POST https://e101-144-178-66-36.ngrok-free.app/api/metrics \
+          curl -X POST https://ef02-144-178-66-36.ngrok-free.app/api/metrics \
           -H "Content-Type: application/json" \
           -H "X-Tool-Name: Jest" \
           -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
@@ -124,7 +124,7 @@ jobs:
 
       - name: Send SonarQube results to API
         run: |
-          curl -X POST https://e101-144-178-66-36.ngrok-free.app/api/metrics \
+          curl -X POST https://ef02-144-178-66-36.ngrok-free.app/api/metrics \
           -H "Content-Type: application/json" \
           -H "X-Tool-Name: SonarQube" \
           -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
