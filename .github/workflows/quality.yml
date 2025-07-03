@@ -24,7 +24,7 @@ jobs:
 #      - name: Install dependencies
 #        run: npm install
 
-      - name: List all JIRA fields
+      - name: Output raw JIRA field data
         env:
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
@@ -32,7 +32,8 @@ jobs:
         run: |
           curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
             -H "Accept: application/json" \
-            "$JIRA_URL/rest/api/3/field" | jq -r '.[] | "\(.id): \(.name)"'
+            "$JIRA_URL/rest/api/3/field"
+
 
 
 
