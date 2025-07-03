@@ -21,27 +21,20 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies
-        run: npm install
+#      - name: Install dependencies
+#        run: npm install
 
-      - name: Fetch JIRA Sprint Story Points (Auto-Detect Field)
+      - name:
+          Debug: List all JIRA fields
         env:
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
           JIRA_URL: ${{ secrets.JIRA_URL }}
-          JIRA_BOARD_ID: '1'
         run: |
-          echo "🔍 Getting Story Points field ID..."
-          
-          STORY_POINTS_FIELD=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
+          curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
             -H "Accept: application/json" \
-            "$JIRA_URL/rest/api/3/field" | jq -r '.[] | select(.name == "Story Points") | .id')
-          
-          if [ -z "$STORY_POINTS_FIELD" ]; then
-            echo "❌ Could not find Story Points field ID." && exit 1
-          fi
-          
-          echo "✅ Found Story Points field: $STORY_POINTS_FIELD"
+            "$JIRA_URL/rest/api/3/field" | jq -r '.[] | "\(.id): \(.name)"'
+
 
 
 
