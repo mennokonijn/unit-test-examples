@@ -24,24 +24,70 @@ jobs:
 #      - name: Install dependencies
 #        run: npm install
 
-      - name: Output raw JIRA field data
+      - name: Fetch JIRA Sprint Story Points (Auto-Detect Field)
         env:
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
           JIRA_URL: ${{ secrets.JIRA_URL }}
+          JIRA_BOARD_ID: '1'
         run: |
-          echo "📋 Dumping field JSON:"
-          response=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
+          echo "🔍 Detecting Story Points field..."
+
+          STORY_POINTS_FIELD=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
             -H "Accept: application/json" \
-            "$JIRA_URL/rest/api/3/field")
+            "$JIRA_URL/rest/api/3/field" | jq -r '.[] | select(.name | test("(?i)story point estimate")) | .id')
 
-          echo "$response" | jq > jira-fields.json
-          cat jira-fields.json
+          if [ -z "$STORY_POINTS_FIELD" ]; then
+            echo "Could not detect the Story Points field."
+            exit 1
+          fi
 
+          echo "📋 Fetching completed sprints..."
+          completed_sprints=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
+            "$JIRA_URL/rest/agile/1.0/board/$JIRA_BOARD_ID/sprint?state=closed" | jq '.values')
 
+          echo "$completed_sprints" > sprints.json
 
+          echo "Processing sprints..."
+          > sprint_points.json
+          for row in $(echo "$completed_sprints" | jq -r '.[] | @base64'); do
+            _jq() {
+              echo "${row}" | base64 --decode | jq -r "${1}"
+            }
 
+            sprint_id=$(_jq '.id')
+            sprint_name=$(_jq '.name')
 
+            echo "Sprint: $sprint_name (ID: $sprint_id)"
+
+            issues=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
+              "$JIRA_URL/rest/agile/1.0/sprint/$sprint_id/issue" | jq '.issues')
+
+            total_estimated=0
+            total_completed=0
+
+            for issue in $(echo "$issues" | jq -c '.[]'); do
+              estimate=$(echo "$issue" | jq -r ".fields[\"$STORY_POINTS_FIELD\"] // 0")
+              status=$(echo "$issue" | jq -r ".fields.status.name")
+
+              total_estimated=$(echo "$total_estimated + $estimate" | bc)
+
+              if [[ "$status" == "Done" || "$status" == "Closed" || "$status" == "Resolved" ]]; then
+                total_completed=$(echo "$total_completed + $estimate" | bc)
+              fi
+            done
+
+            echo "{\"sprint\":\"$sprint_name\",\"estimated\":$total_estimated,\"completed\":$total_completed}" >> sprint_points.json
+          done
+
+      - name: Send Sprint Points to API
+        run: |
+          echo "🚀 Sending metrics to API..."
+          curl -X POST https://ef02-144-178-66-36.ngrok-free.app/api/metrics \
+            -H "Content-Type: application/json" \
+            -H "X-Tool-Name: Jira-SprintPoints" \
+            -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
+            --data @sprint_points.json
 
 #      - name: Install GitLeaks
 #        run: |
