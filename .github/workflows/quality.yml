@@ -24,8 +24,7 @@ jobs:
 #      - name: Install dependencies
 #        run: npm install
 
-      - name:
-          Debug: List all JIRA fields
+      - name: List all JIRA fields
         env:
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
