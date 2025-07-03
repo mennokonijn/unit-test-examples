@@ -79,6 +79,8 @@ jobs:
             result_entry="{\"sprint\":\"$sprint_name\",\"estimated\":$total_estimated,\"completed\":$total_completed}"
             results=$(echo "$results" | jq ". + [$result_entry]")
           done
+          
+          echo "$results" > sprint_points.json
 
       - name: Send Sprint Points to API
         run: |
