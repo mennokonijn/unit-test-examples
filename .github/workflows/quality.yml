@@ -87,7 +87,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-Tool-Name: Jira-SprintPoints" \
             -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
-            --data @jirapoints-results.json
+            --data @sprint_points.json
 
 
 #      - name: Install GitLeaks
