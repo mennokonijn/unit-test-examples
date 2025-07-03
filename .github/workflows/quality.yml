@@ -61,7 +61,11 @@ jobs:
             echo "$issues_response" > issues_raw.json
 
             issues=$(echo "$issues_response" | jq '.issues')
-
+          
+            echo "🧪 Raw story point values for this sprint:"
+            echo "$issues" | jq ".[] | .fields[\"$STORY_POINTS_FIELD\"]"
+  
+  
             total_estimated=0
             total_completed=0
 
