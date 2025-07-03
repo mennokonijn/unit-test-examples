@@ -24,23 +24,15 @@ jobs:
 #      - name: Install dependencies
 #        run: npm install
 
-      - name: Fetch JIRA Sprint Story Points (Auto-Detect Field)
+      - name: Fetch JIRA Sprint Story Points
         env:
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
           JIRA_URL: ${{ secrets.JIRA_URL }}
           JIRA_BOARD_ID: '1'
         run: |
-          echo "Detecting Story Points field..."
-
-          STORY_POINTS_FIELD=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
-            -H "Accept: application/json" \
-            "$JIRA_URL/rest/api/3/field" | jq -r '.[] | select(.name | test("(?i)story point estimate")) | .id')
-
-          if [ -z "$STORY_POINTS_FIELD" ]; then
-            echo "Could not detect the Story Points field."
-            exit 1
-          fi
+          STORY_POINTS_FIELD="customfield_10016"
+          echo "Using Story Points field: $STORY_POINTS_FIELD"
 
           echo "Fetching completed sprints..."
           completed_sprints=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
@@ -62,14 +54,12 @@ jobs:
 
             issues_url="$JIRA_URL/rest/agile/1.0/sprint/$sprint_id/issue"
             echo "📥 Fetching issues from: $issues_url"
-              
+
             issues_response=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" "$issues_url")
             echo "$issues_response" > issues_raw.json
-            cat issues_raw.json
-            
+
             issues=$(echo "$issues_response" | jq '.issues')
-              
-  
+
             total_estimated=0
             total_completed=0
 
@@ -95,6 +85,7 @@ jobs:
             -H "X-Tool-Name: Jira-SprintPoints" \
             -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
             --data @sprint_points.json
+
 
 #      - name: Install GitLeaks
 #        run: |
