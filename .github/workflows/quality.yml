@@ -39,11 +39,10 @@ jobs:
             "$JIRA_URL/rest/agile/1.0/board/$JIRA_BOARD_ID/sprint?state=closed" | jq '.values')
 
           echo "$completed_sprints" > sprints.json
-          
+
           results="[]"
 
           echo "Processing sprints..."
-          > sprint_points.json
           for row in $(echo "$completed_sprints" | jq -r '.[] | @base64'); do
             _jq() {
               echo "${row}" | base64 --decode | jq -r "${1}"
@@ -53,7 +52,6 @@ jobs:
             sprint_name=$(_jq '.name')
 
             echo "Sprint: $sprint_name (ID: $sprint_id)"
-
             issues_url="$JIRA_URL/rest/agile/1.0/sprint/$sprint_id/issue"
             echo "Fetching issues from: $issues_url"
 
@@ -61,29 +59,24 @@ jobs:
             echo "$issues_response" > issues_raw.json
 
             issues=$(echo "$issues_response" | jq '.issues')
-          
-            echo "🧪 Raw story point values for this sprint:"
-            echo "$issues" | jq ".[] | .fields[\"$STORY_POINTS_FIELD\"]"
-  
-  
+
             total_estimated=0
             total_completed=0
 
-            echo "$issues" | jq -c '.[]' | while read -r issue; do
+            while IFS= read -r issue; do
               estimate=$(echo "$issue" | jq -r ".fields[\"$STORY_POINTS_FIELD\"] // 0")
               status=$(echo "$issue" | jq -r ".fields.status.name")
-            
+
               total_estimated=$(echo "$total_estimated + $estimate" | bc)
-            
               if [[ "$status" == "Done" || "$status" == "Closed" || "$status" == "Resolved" ]]; then
-              total_completed=$(echo "$total_completed + $estimate" | bc)
+                total_completed=$(echo "$total_completed + $estimate" | bc)
               fi
-              done
+            done < <(echo "$issues" | jq -c '.[]')
 
             result_entry="{\"sprint\":\"$sprint_name\",\"estimated\":$total_estimated,\"completed\":$total_completed}"
             results=$(echo "$results" | jq ". + [$result_entry]")
           done
-          
+
           echo "$results" > sprint_points.json
 
       - name: Send Sprint Points to API
