@@ -32,32 +32,15 @@ jobs:
           sudo mv gitleaks /usr/local/bin/gitleaks
 
 
-      - name: Run Trivy Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          scan-ref: .
-          format: json
-          output: trivy-results.json
-
-      - name: Send Trivy results to API
-        run: |
-          curl -X POST https://ef02-144-178-66-36.ngrok-free.app/api/metrics \
-          -H "Content-Type: application/json" \
-          -H "X-Tool-Name: Trivy" \
-          -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
-          --data @trivy-results.json
-
-
       - name: Run GitLeaks
         run: |
-          echo "[allowlist]
-          description = \"Exclude common non-source directories\"
+          echo '[allowlist]
+          description = "Exclude common non-source directories"
           paths = [
-          '''\\.cache/''',
+          '''\.cache/''',
           '''node_modules/''',
           '''dist/'''
-          ]" > .gitleaks.toml
+          ]' > .gitleaks.toml
           
           gitleaks detect \
           --source=. \
@@ -70,9 +53,9 @@ jobs:
       - name: Send GitLeaks results to API
         run: |
           curl -X POST https://ef02-144-178-66-36.ngrok-free.app/api/metrics \
-          -H "Content-Type: application/json" \
-          -H "X-Tool-Name: GitLeaks" \
-          -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
+          -H 'Content-Type: application/json' \
+          -H 'X-Tool-Name: GitLeaks' \
+          -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
           --data @gitleaks.json
 
 
@@ -84,9 +67,9 @@ jobs:
       - name: Send Jest results to API
         run: |
           curl -X POST https://ef02-144-178-66-36.ngrok-free.app/api/metrics \
-          -H "Content-Type: application/json" \
-          -H "X-Tool-Name: Jest" \
-          -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
+          -H 'Content-Type: application/json' \
+          -H 'X-Tool-Name: Jest' \
+          -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
           --data @jest-results.json
 
 
@@ -106,7 +89,7 @@ jobs:
 
       - name: Wait for SonarQube Analysis to Complete
         run: |
-          echo "Waiting for SonarQube analysis..." && \
+          echo 'Waiting for SonarQube analysis...' && \
           while true; do \
           STATUS=$(curl -s -u ${{ secrets.SONAR_TOKEN }}: "${{ secrets.SONAR_HOST_URL }}/api/ce/component?component=${{ secrets.SONAR_PROJECT_KEY }}" | jq -r '.current.status'); \
           echo "Current SonarQube status: $STATUS"; \
@@ -125,7 +108,24 @@ jobs:
       - name: Send SonarQube results to API
         run: |
           curl -X POST https://ef02-144-178-66-36.ngrok-free.app/api/metrics \
-          -H "Content-Type: application/json" \
-          -H "X-Tool-Name: SonarQube" \
-          -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
+          -H 'Content-Type: application/json' \
+          -H 'X-Tool-Name: SonarQube' \
+          -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
           --data @sonar-results.json
+
+
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: json
+          output: trivy-results.json
+
+      - name: Send Trivy results to API
+        run: |
+          curl -X POST https://ef02-144-178-66-36.ngrok-free.app/api/metrics \
+          -H 'Content-Type: application/json' \
+          -H 'X-Tool-Name: Trivy' \
+          -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
+          --data @trivy-results.json
