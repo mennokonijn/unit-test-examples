@@ -68,7 +68,7 @@ jobs:
               status=$(echo "$issue" | jq -r ".fields.status.name")
 
               total_estimated=$(echo "$total_estimated + $estimate" | bc)
-              if [[ "$status" == "Done" || "$status" == "Closed" || "$status" == "Resolved" ]]; then
+              if [[ "$state" == "done" || "$state" == "closed" || "$state" == "resolved" ]]; then
                 total_completed=$(echo "$total_completed + $estimate" | bc)
               fi
             done < <(echo "$issues" | jq -c '.[]')
