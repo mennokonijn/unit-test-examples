@@ -65,16 +65,16 @@ jobs:
           
             echo "Ik kom hier"
 
-            for issue in $(echo "$issues" | jq -c '.[]'); do
+            echo "$issues" | jq -c '.[]' | while read -r issue; do
               estimate=$(echo "$issue" | jq -r ".fields[\"$STORY_POINTS_FIELD\"] // 0")
               status=$(echo "$issue" | jq -r ".fields.status.name")
-
+            
               total_estimated=$(echo "$total_estimated + $estimate" | bc)
-
+            
               if [[ "$status" == "Done" || "$status" == "Closed" || "$status" == "Resolved" ]]; then
-                total_completed=$(echo "$total_completed + $estimate" | bc)
+              total_completed=$(echo "$total_completed + $estimate" | bc)
               fi
-            done
+              done
 
             echo "{\"sprint\":\"$sprint_name\",\"estimated\":$total_estimated,\"completed\":$total_completed}" >> sprint_points.json
           done
