@@ -62,6 +62,8 @@ jobs:
 
             total_estimated=0
             total_completed=0
+          
+            echo "Ik kom hier"
 
             for issue in $(echo "$issues" | jq -c '.[]'); do
               estimate=$(echo "$issue" | jq -r ".fields[\"$STORY_POINTS_FIELD\"] // 0")
