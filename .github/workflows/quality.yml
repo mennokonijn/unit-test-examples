@@ -31,7 +31,7 @@ jobs:
           JIRA_URL: ${{ secrets.JIRA_URL }}
           JIRA_BOARD_ID: '1'
         run: |
-          echo "🔍 Detecting Story Points field..."
+          echo "Detecting Story Points field..."
 
           STORY_POINTS_FIELD=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
             -H "Accept: application/json" \
@@ -42,7 +42,7 @@ jobs:
             exit 1
           fi
 
-          echo "📋 Fetching completed sprints..."
+          echo "Fetching completed sprints..."
           completed_sprints=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
             "$JIRA_URL/rest/agile/1.0/board/$JIRA_BOARD_ID/sprint?state=closed" | jq '.values')
 
@@ -60,9 +60,16 @@ jobs:
 
             echo "Sprint: $sprint_name (ID: $sprint_id)"
 
-            issues=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" \
-              "$JIRA_URL/rest/agile/1.0/sprint/$sprint_id/issue" | jq '.issues')
-
+            issues_url="$JIRA_URL/rest/agile/1.0/sprint/$sprint_id/issue"
+            echo "📥 Fetching issues from: $issues_url"
+              
+            issues_response=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" "$issues_url")
+            echo "$issues_response" > issues_raw.json
+            cat issues_raw.json
+            
+            issues=$(echo "$issues_response" | jq '.issues')
+              
+  
             total_estimated=0
             total_completed=0
 
