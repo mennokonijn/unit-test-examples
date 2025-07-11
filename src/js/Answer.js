@@ -3,7 +3,7 @@ import React from 'react';
 const Answer = ( props ) => {
 	const { id, text } = props;
 
-	// test
+	// test extra
 
 	return (
 		<li className="oracle__answer">
