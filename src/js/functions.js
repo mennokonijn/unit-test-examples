@@ -3,7 +3,7 @@
  * @return {string} The answer to life, universe and everything.
  */
 // test-secret.js
-const API_KEY = "AKIAFAKEKEY1234567890";
+const AWS_KEY = "AKIA1234567890ABCDEF";
 
 export function getAnswer() {
 	return '42';
