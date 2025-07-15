@@ -11,4 +11,5 @@ class Oracle {
 	}
 }
 
+
 export default Oracle;
