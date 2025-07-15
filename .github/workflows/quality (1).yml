@@ -33,21 +33,32 @@ jobs:
 
       - name: Run GitLeaks
         run: |
-          echo "[allowlist]
-          description = \"Exclude common non-source directories\"
-          paths = [
-            '''\\.cache/''',
-            '''node_modules/''',
-            '''dist/'''
-          ]" > .gitleaks.toml
-          
           gitleaks detect \
             --source=. \
-            --config=.gitleaks.toml \
-            --report-format json \
+            --report-format=json \
             --report-path=gitleaks.json \
-            --no-git
+            --no-git \
+            --exclude-paths 'node_modules,dist,.cache'
         continue-on-error: true
+
+
+    #      - name: Run GitLeaks
+#        run: |
+#          echo "[allowlist]
+#          description = \"Exclude common non-source directories\"
+#          paths = [
+#            '''\\.cache/''',
+#            '''node_modules/''',
+#            '''dist/'''
+#          ]" > .gitleaks.toml
+#
+#          gitleaks detect \
+#            --source=. \
+#            --config=.gitleaks.toml \
+#            --report-format json \
+#            --report-path=gitleaks.json \
+#            --no-git
+#        continue-on-error: true
 
       - name: Send GitLeaks results to API
         run: |
