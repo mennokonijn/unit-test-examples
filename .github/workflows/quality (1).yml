@@ -110,15 +110,11 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Install CycloneDX for Node
+      - name: Generate SBOM (CycloneDX)
         run: |
-          npm install -g @cyclonedx/bom
+          npx @cyclonedx/bom -o bom.json
 
-      - name: Generate SBOM
-        run: |
-          cyclonedx-bom -o bom.json
-
-      - name: Run Trivy on SBOM (includes license and CVE info)
+      - name: Run Trivy on SBOM (licenses + CVEs)
         run: |
           trivy sbom --scanners vuln,license --format json --output trivy-results.json bom.json
 
