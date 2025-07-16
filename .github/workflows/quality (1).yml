@@ -110,21 +110,10 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Run Trivy Scan (SBOM or Fallback FS)
+      - name: Run Trivy Scan (auto-detect lockfiles)
         run: |
-          if [ -f package-lock.json ]; then
-            echo "Detected npm"
-            trivy sbom --scanners vuln,license --format json --output trivy-results.json package-lock.json
-          elif [ -f yarn.lock ]; then
-            echo "Detected yarn"
-            trivy sbom --scanners vuln,license --format json --output trivy-results.json yarn.lock
-          elif [ -f go.mod ]; then
-            echo "Detected Go"
-            trivy sbom --scanners vuln,license --format json --output trivy-results.json go.mod
-          else
-            echo "No supported lockfile found. Running fallback fs scan."
-            trivy fs --scanners vuln,license --format json --output trivy-results.json .
-          fi
+          echo "Scanning codebase using fs scan with vuln and license detectors"
+          trivy fs --scanners vuln,license --format json --output trivy-results.json .
 
       - name: Send Trivy results to API
         run: |
