@@ -116,7 +116,7 @@ jobs:
 
       - name: Generate SBOM (CycloneDX JSON)
         run: |
-          npx cyclonedx-npm --json
+          npx cyclonedx-npm --output-format json > bom.json
 
       - name: Run Trivy on SBOM (licenses + CVEs)
         run: |
