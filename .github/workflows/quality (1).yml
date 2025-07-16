@@ -114,9 +114,9 @@ jobs:
         run: |
           npm install --save-dev @cyclonedx/cyclonedx-npm
 
-      - name: Generate SBOM (CycloneDX)
+      - name: Generate SBOM (CycloneDX JSON)
         run: |
-          npx cyclonedx-npm --output bom.json
+          npx cyclonedx-npm --json
 
       - name: Run Trivy on SBOM (licenses + CVEs)
         run: |
