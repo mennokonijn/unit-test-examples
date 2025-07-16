@@ -97,14 +97,31 @@ jobs:
 #            -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
 #            --data @sonar-results.json
 
-      - name: Run Trivy Scan
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: fs
-          scan-ref: .
-          scanners: 'vuln,license'
-          format: json
-          output: trivy-results.json
+#      - name: Run Trivy Scan
+#        uses: aquasecurity/trivy-action@master
+#        with:
+#          scan-type: fs
+#          scan-ref: .
+#          scanners: 'vuln,license'
+#          format: json
+#          output: trivy-results.json
+
+      - name: Run Trivy Scan for Licenses + CVEs
+        run: |
+          if [ -f package-lock.json ]; then
+            echo "Detected npm"
+            trivy sbom --scanners vuln,license --format json --output trivy-results.json package-lock.json
+          elif [ -f yarn.lock ]; then
+            echo "Detected yarn"
+            trivy sbom --scanners vuln,license --format json --output trivy-results.json yarn.lock
+          elif [ -f go.mod ]; then
+            echo "Detected Go"
+            trivy sbom --scanners vuln,license --format json --output trivy-results.json go.mod
+          else
+            echo "No supported lockfile found. Running fallback fs scan."
+            trivy fs --scanners vuln,license --format json --output trivy-results.json .
+          fi
+
 
       - name: Send Trivy results to API
         run: |
