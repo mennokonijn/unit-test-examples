@@ -106,7 +106,11 @@ jobs:
 #          format: json
 #          output: trivy-results.json
 
-      - name: Run Trivy Scan for Licenses + CVEs
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Run Trivy Scan (SBOM or Fallback FS)
         run: |
           if [ -f package-lock.json ]; then
             echo "Detected npm"
@@ -121,7 +125,6 @@ jobs:
             echo "No supported lockfile found. Running fallback fs scan."
             trivy fs --scanners vuln,license --format json --output trivy-results.json .
           fi
-
 
       - name: Send Trivy results to API
         run: |
