@@ -177,3 +177,21 @@ jobs:
             -H 'X-Tool-Name: Jira-SprintPoints' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
             --data @sprint_points.json
+
+      - name: Fetch Epics from JIRA
+        run: |
+          echo "Fetching epics from JIRA..."
+          
+          epics=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
+            -G --data-urlencode "jql=issuetype=Epic" \
+            "${{ secrets.JIRA_URL }}/rest/api/2/search?fields=key,summary,labels")
+          
+          echo "$epics" > epics.json
+
+      - name: Send Epics to API
+        run: |
+          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+            -H 'Content-Type: application/json' \
+            -H 'X-Tool-Name: Jira-Security-Epics' \
+            -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
+            --data @epics.json
