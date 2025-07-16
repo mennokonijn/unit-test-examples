@@ -218,6 +218,8 @@ jobs:
             -G --data-urlencode "jql=labels in (\"security-incident\", \"vulnerability\") AND created >= \"$start_date\" AND created <= \"$end_date\"" \
             "${{ secrets.JIRA_URL }}/rest/api/2/search?fields=key,summary,created")
           
+          echo "$incidents" > security_incidents.json
+          
 
       - name: Send Security Incidents to API
         run: |
@@ -225,5 +227,5 @@ jobs:
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jira-Security-Incidents' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
-            --data @security_incidents_sprint.json
+            --data @security_incidents.json
 
