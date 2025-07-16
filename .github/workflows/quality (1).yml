@@ -110,10 +110,17 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Run Trivy Scan (auto-detect lockfiles)
+      - name: Install CycloneDX for Node
         run: |
-          echo "Scanning codebase using fs scan with vuln and license detectors"
-          trivy fs --scanners vuln,license --format json --output trivy-results.json .
+          npm install -g @cyclonedx/bom
+
+      - name: Generate SBOM
+        run: |
+          cyclonedx-bom -o bom.json
+
+      - name: Run Trivy on SBOM (includes license and CVE info)
+        run: |
+          trivy sbom --scanners vuln,license --format json --output trivy-results.json bom.json
 
       - name: Send Trivy results to API
         run: |
