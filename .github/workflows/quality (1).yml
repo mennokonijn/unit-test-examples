@@ -195,4 +195,3 @@ jobs:
             -H 'X-Tool-Name: Jira-Security-Epics' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
             --data @epics.json
-
