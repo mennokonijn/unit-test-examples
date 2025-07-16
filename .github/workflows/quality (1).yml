@@ -178,9 +178,9 @@ jobs:
 #            -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
 #            --data @sprint_points.json
 #
-      - name: Fetch Security-Related Epics from JIRA
+      - name: Fetch Epics from JIRA
         run: |
-          echo "Fetching epics with the 'security' label from JIRA..."
+          echo "Fetching epics from JIRA..."
 
           security_epics=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
             -G --data-urlencode "jql=issuetype=Epic" \
@@ -188,11 +188,11 @@ jobs:
 
           echo "$epics" > epics.json
 
-      - name: Send Security Epics to API
+      - name: Send Epics to API
         run: |
           curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jira-Security-Epics' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
-            --data @security_epics.json
+            --data @epics.json
 
