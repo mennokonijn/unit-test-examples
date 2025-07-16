@@ -182,7 +182,7 @@ jobs:
         run: |
           echo "Fetching epics from JIRA..."
 
-          security_epics=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
+          epics=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
             -G --data-urlencode "jql=issuetype=Epic" \
             "${{ secrets.JIRA_URL }}/rest/api/2/search?fields=key,summary")
 
