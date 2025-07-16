@@ -8,4 +8,3 @@ const AWS_KEY = "AKIA1234567890ABCDEF";
 export function getAnswer() {
 	return '42';
 }
-
