@@ -250,7 +250,11 @@ jobs:
           
           echo "{ \"loc\": $loc, \"kloc\": $kloc }" > loc.json
 
-      - name: Send Defect Density Inputs to API
+      - name: Merge Defect Density Inputs
+        run: |
+          jq -s '.[0] * .[1]' jira_bugs.json loc.json > defect_density.json
+
+      - name: Send Defect Density Data to API
         run: |
           curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
