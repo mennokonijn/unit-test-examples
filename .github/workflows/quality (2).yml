@@ -270,7 +270,7 @@ jobs:
 
       - name: Send Language Energy Impact to API
         run: |
-          curl -X POST https://your-api-url/api/metrics \
+          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Language-Impact' \
             -H 'X-Repo-Name: https://github.com/${{ github.repository }}' \
