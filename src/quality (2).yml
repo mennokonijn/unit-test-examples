@@ -25,10 +25,12 @@ jobs:
         run: npm install
 
       - name: Start Express App
-        run: PORT=8080 npm run start &
+        run: |
+          PORT=8080 npm run start &
 
       - name: Wait for app to be ready
-        run: sleep 10
+        run: |
+          sleep 10
 
       - name: Run OWASP ZAP Baseline Scan
         run: |
@@ -45,9 +47,9 @@ jobs:
       - name: Send ZAP results to API
         run: |
           curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
-            -H "Content-Type: application/json" \
-            -H "X-Tool-Name: ZAP" \
-            -H "X-Repo-Name: https://github.com/mennokonijn/unit-test-examples" \
+            -H 'Content-Type: application/json' \
+            -H 'X-Tool-Name: ZAP' \
+            -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
             --data @zap-report.json
 
       - name: Install Depcheck
@@ -166,50 +168,50 @@ jobs:
         run: |
           STORY_POINTS_FIELD="customfield_10016"
           echo "Using Story Points field: $STORY_POINTS_FIELD"
-
+          
           echo "Fetching completed sprints..."
           completed_sprints=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
             "${{ secrets.JIRA_URL }}/rest/agile/1.0/board/${{ secrets.JIRA_BOARD }}/sprint?state=closed" | jq '.values')
-
+          
           echo "$completed_sprints" > sprints.json
-
+          
           results="[]"
-
+          
           echo "Processing sprints..."
           for row in $(echo "$completed_sprints" | jq -r '.[] | @base64'); do
             _jq() {
               echo "${row}" | base64 --decode | jq -r "${1}"
             }
-
+          
             sprint_id=$(_jq '.id')
             sprint_name=$(_jq '.name')
-
+          
             echo "Sprint: $sprint_name (ID: $sprint_id)"
             issues_url="${{ secrets.JIRA_URL }}/rest/agile/1.0/sprint/$sprint_id/issue"
             echo "Fetching issues from: $issues_url"
-
+          
             issues_response=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} "$issues_url")
             echo "$issues_response" > issues_raw.json
-
+          
             issues=$(echo "$issues_response" | jq '.issues')
-
+          
             total_estimated=0
             total_completed=0
-
+          
             while IFS= read -r issue; do
               estimate=$(echo "$issue" | jq -r ".fields[\"$STORY_POINTS_FIELD\"] // 0")
               status=$(echo "$issue" | jq -r ".fields.status.name")
-
+          
               total_estimated=$(echo "$total_estimated + $estimate" | bc)
               if [[ "$status" == "Gereed" ]]; then
                 total_completed=$(echo "$total_completed + $estimate" | bc)
               fi
             done < <(echo "$issues" | jq -c '.[]')
-
+          
             result_entry="{\"sprint\":\"$sprint_name\",\"estimated\":$total_estimated,\"completed\":$total_completed}"
             results=$(echo "$results" | jq ". + [${result_entry}]")
           done
-
+          
           echo "$results" > sprint_points.json
 
       - name: Send Sprint Points to API
@@ -223,11 +225,11 @@ jobs:
       - name: Fetch Epics from JIRA
         run: |
           echo "Fetching epics from JIRA..."
-
+          
           epics=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
             -G --data-urlencode "jql=issuetype=Epic" \
             "${{ secrets.JIRA_URL }}/rest/api/2/search?fields=key,summary,labels")
-
+          
           echo "$epics" > epics.json
 
       - name: Send Epics to API
@@ -241,30 +243,30 @@ jobs:
       - name: Fetch Security Incidents Created During Sprint
         run: |
           echo "Fetching current active sprint..."
-
+          
           active_sprint=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
             "${{ secrets.JIRA_URL }}/rest/agile/1.0/board/${{ secrets.JIRA_BOARD }}/sprint?state=active" | jq '.values[0]')
-
+          
           sprint_id=$(echo "$active_sprint" | jq -r '.id')
           sprint_name=$(echo "$active_sprint" | jq -r '.name')
           start_date=$(echo "$active_sprint" | jq -r '.startDate' | cut -d'T' -f1)
           end_date=$(echo "$active_sprint" | jq -r '.endDate' | cut -d'T' -f1)
-
+          
           if [ -z "$start_date" ] || [ -z "$end_date" ]; then
             echo "Sprint dates not found. Exiting early."
             exit 1
           fi
-
+          
           echo "Active sprint: $sprint_name (ID: $sprint_id)"
           echo "Start: $start_date"
           echo "End:   $end_date"
-
+          
           echo "Fetching security incidents created during sprint timeframe..."
-
+          
           incidents=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
             -G --data-urlencode "jql=labels in (\"security-incident\", \"vulnerability\") AND created >= \"$start_date\" AND created <= \"$end_date\"" \
             "${{ secrets.JIRA_URL }}/rest/api/2/search?fields=key,summary,created")
-
+          
           echo "$incidents" > security_incidents.json
 
       - name: Send Security Incidents to API
@@ -281,7 +283,7 @@ jobs:
           bugs=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
             -G --data-urlencode "jql=issuetype=Bug" \
             "${{ secrets.JIRA_URL }}/rest/api/2/search?fields=key,summary,created")
-
+          
           echo "$bugs" > jira_bugs.json
 
       - name: Count LOC for Defect Density
@@ -289,7 +291,7 @@ jobs:
           echo "Counting lines of code in ./src..."
           loc=$(find ./src -type f \( -name '*.ts' -o -name '*.js' -o -name '*.tsx' -o -name '*.jsx' \) | xargs wc -l | tail -n 1 | awk '{print $1}')
           kloc=$(echo "scale=2; $loc / 1000" | bc)
-
+          
           echo "{ \"loc\": $loc, \"kloc\": $kloc }" > loc.json
 
       - name: Merge Defect Density Inputs
