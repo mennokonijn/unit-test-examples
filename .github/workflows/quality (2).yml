@@ -56,27 +56,28 @@ jobs:
 #        run: |
 #          npm install -g depcheck
 #
-#      - name: Fetch Deployment Events from GitHub API
-#        run: |
-#          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-#            https://api.github.com/repos/${{ github.repository }}/deployments \
-#            > deployments.json
-#
-#      - name: Fetch Workflow Runs
-#        run: |
-#          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-#            "https://api.github.com/repos/${{ github.repository }}/actions/runs?branch=master&status=completed" \
-#            > workflow_runs.json
-#
-#      - name: Send Deployment Metrics to API
-#        run: |
-#          jq 'map({sha: .sha, timestamp: .created_at, environment: .environment})' deployments.json > deployment_metrics.json
-#
-#          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
-#            -H 'Content-Type: application/json' \
-#            -H 'X-Tool-Name: GitHub-Deployment-Metrics' \
-#            -H 'X-Repo-Name: https://github.com/${{ github.repository }}" \
-#            --data @deployment_metrics.json
+      - name: Fetch Deployment Events from GitHub API
+        run: |
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/deployments \
+            > deployments.json
+
+      - name: Fetch Workflow Runs
+        run: |
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?branch=master&status=completed" \
+            | jq '[.workflow_runs[] | select(.name == "Simulate Deployment History")]' \
+            > workflow_runs.json
+
+      - name: Send Deployment Metrics to API
+        run: |
+          jq 'map({sha: .sha, timestamp: .created_at, environment: .environment})' deployments.json > deployment_metrics.json
+
+          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+            -H 'Content-Type: application/json' \
+            -H 'X-Tool-Name: GitHub-Deployment-Metrics' \
+            -H 'X-Repo-Name: https://github.com/${{ github.repository }}" \
+            --data @deployment_metrics.json
 
 
 #      - name: Run Depcheck
