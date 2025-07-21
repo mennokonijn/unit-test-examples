@@ -72,12 +72,13 @@ jobs:
       - name: Send Deployment Metrics to API
         run: |
           jq 'map({sha: .sha, timestamp: .created_at, environment: .environment})' deployments.json > deployment_metrics.json
-
+      
           curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: GitHub-Deployment-Metrics' \
-            -H 'X-Repo-Name: https://github.com/${{ github.repository }}" \
+            -H "X-Repo-Name: https://github.com/${{ github.repository }}" \
             --data @deployment_metrics.json
+
 
 
 #      - name: Run Depcheck
