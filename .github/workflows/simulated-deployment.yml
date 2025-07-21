@@ -1,0 +1,88 @@
+name: Simulate Deployment History
+
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "Number of fake deployments to simulate"
+        required: true
+        default: 5
+      failRatio:
+        description: "Failure ratio (0.0 - 1.0)"
+        required: true
+        default: 0.3
+
+jobs:
+  simulate-deployments:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Simulate Deployments
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COUNT=${{ github.event.inputs.count }}
+          FAIL_RATIO=${{ github.event.inputs.failRatio }}
+          echo "Simulating $COUNT deployments with failure ratio $FAIL_RATIO"
+
+          for i in $(seq 1 $COUNT); do
+            echo "Simulating deployment $i..."
+
+            # Create deployment
+            DEPLOYMENT=$(curl -s -X POST \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              https://api.github.com/repos/${{ github.repository }}/deployments \
+              -d "{
+                \"ref\": \"master\",
+                \"description\": \"Simulated deployment #$i\",
+                \"required_contexts\": [],
+                \"auto_merge\": false,
+                \"environment\": \"production\"
+              }")
+
+            DEPLOYMENT_ID=$(echo "$DEPLOYMENT" | jq -r '.id')
+            echo "Created deployment ID: $DEPLOYMENT_ID"
+
+            # Decide if this deployment fails or succeeds
+            R=$(awk -v seed=$RANDOM 'BEGIN { srand(seed); print rand() }')
+            if (( $(echo "$R < $FAIL_RATIO" | bc -l) )); then
+              echo "Simulating failure"
+
+              curl -s -X POST \
+                -H "Authorization: token $GH_TOKEN" \
+                https://api.github.com/repos/${{ github.repository }}/deployments/$DEPLOYMENT_ID/statuses \
+                -d "{
+                  \"state\": \"failure\",
+                  \"description\": \"Simulated failed deployment\"
+                }"
+
+              # Simulate recovery after short delay
+              sleep 2
+              echo "Simulating recovery"
+
+              curl -s -X POST \
+                -H "Authorization: token $GH_TOKEN" \
+                https://api.github.com/repos/${{ github.repository }}/deployments/$DEPLOYMENT_ID/statuses \
+                -d "{
+                  \"state\": \"success\",
+                  \"description\": \"Simulated recovery\"
+                }"
+            else
+              echo "Simulating success"
+
+              curl -s -X POST \
+                -H "Authorization: token $GH_TOKEN" \
+                https://api.github.com/repos/${{ github.repository }}/deployments/$DEPLOYMENT_ID/statuses \
+                -d "{
+                  \"state\": \"success\",
+                  \"description\": \"Simulated successful deployment\"
+                }"
+            fi
+
+            # Simulate time between deploys
+            sleep 2
+          done
