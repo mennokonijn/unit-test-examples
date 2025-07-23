@@ -24,8 +24,50 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Fetch Deployment Events from GitHub API
+        run: |
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/deployments \
+            > deployments.json
+
+      - name: Fetch Workflow Runs (for MTTR)
+        run: |
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?branch=master&status=completed" \
+            | jq '[.workflow_runs[] | select(.name == "Simulate Deployment History")]' \
+            > workflow_runs.json
+
+      - name: Start Express App
+        run: |
+          PORT=8080 npm run start &
+
+      - name: Wait for app to be ready
+        run: |
+          sleep 10
+
+      - name: Run OWASP ZAP Baseline Scan
+        run: |
+          docker run -u root --network host \
+            -v $(pwd):/zap/wrk/:rw \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://localhost:8080 \
+            -g zap-gen.conf \
+            -r zap-report.html \
+            -J zap-report.json \
+            -z "-config api.disablekey=true"
+        continue-on-error: true
+
+      - name: Send ZAP results to API
+        run: |
+          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+            -H 'Content-Type: application/json' \
+            -H 'X-Tool-Name: ZAP' \
+            -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
+            --data @zap-report.json
+
       - name: Install Depcheck
-        run: npm install -g depcheck
+        run: |
+          npm install -g depcheck
 
       - name: Run Depcheck
         run: |
@@ -139,50 +181,50 @@ jobs:
         run: |
           STORY_POINTS_FIELD="customfield_10016"
           echo "Using Story Points field: $STORY_POINTS_FIELD"
-
+          
           echo "Fetching completed sprints..."
-          completed_sprints=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
-            "${{ secrets.JIRA_URL }}/rest/agile/1.0/board/${{ secrets.JIRA_BOARD }}/sprint?state=closed" | jq '.values')
-
+          completed_sprints=$(curl -s -u mennokonijn@gmail.com:${{ secrets.JIRA_TOKEN }} \
+            "https://mennokonijn.atlassian.net/rest/agile/1.0/board/1/sprint?state=closed" | jq '.values')
+          
           echo "$completed_sprints" > sprints.json
-
+          
           results="[]"
-
+          
           echo "Processing sprints..."
           for row in $(echo "$completed_sprints" | jq -r '.[] | @base64'); do
             _jq() {
               echo "${row}" | base64 --decode | jq -r "${1}"
             }
-
+          
             sprint_id=$(_jq '.id')
             sprint_name=$(_jq '.name')
-
+          
             echo "Sprint: $sprint_name (ID: $sprint_id)"
-            issues_url="${{ secrets.JIRA_URL }}/rest/agile/1.0/sprint/$sprint_id/issue"
+            issues_url="https://mennokonijn.atlassian.net/rest/agile/1.0/sprint/$sprint_id/issue"
             echo "Fetching issues from: $issues_url"
-
-            issues_response=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} "$issues_url")
+          
+            issues_response=$(curl -s -u mennokonijn@gmail.com:${{ secrets.JIRA_TOKEN }} "$issues_url")
             echo "$issues_response" > issues_raw.json
-
+          
             issues=$(echo "$issues_response" | jq '.issues')
-
+          
             total_estimated=0
             total_completed=0
-
+          
             while IFS= read -r issue; do
               estimate=$(echo "$issue" | jq -r ".fields[\"$STORY_POINTS_FIELD\"] // 0")
               status=$(echo "$issue" | jq -r ".fields.status.name")
-
+          
               total_estimated=$(echo "$total_estimated + $estimate" | bc)
               if [[ "$status" == "Gereed" ]]; then
                 total_completed=$(echo "$total_completed + $estimate" | bc)
               fi
             done < <(echo "$issues" | jq -c '.[]')
-
+          
             result_entry="{\"sprint\":\"$sprint_name\",\"estimated\":$total_estimated,\"completed\":$total_completed}"
             results=$(echo "$results" | jq ". + [${result_entry}]")
           done
-
+          
           echo "$results" > sprint_points.json
 
       - name: Send Sprint Points to API
@@ -196,11 +238,11 @@ jobs:
       - name: Fetch Epics from JIRA
         run: |
           echo "Fetching epics from JIRA..."
-
-          epics=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
+          
+          epics=$(curl -s -u mennokonijn@gmail.com:${{ secrets.JIRA_TOKEN }} \
             -G --data-urlencode "jql=issuetype=Epic" \
-            "${{ secrets.JIRA_URL }}/rest/api/2/search?fields=key,summary,labels")
-
+            "https://mennokonijn.atlassian.net/rest/api/2/search?fields=key,summary,labels")
+          
           echo "$epics" > epics.json
 
       - name: Send Epics to API
@@ -214,30 +256,30 @@ jobs:
       - name: Fetch Security Incidents Created During Sprint
         run: |
           echo "Fetching current active sprint..."
-
-          active_sprint=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
-            "${{ secrets.JIRA_URL }}/rest/agile/1.0/board/${{ secrets.JIRA_BOARD }}/sprint?state=active" | jq '.values[0]')
-
+          
+          active_sprint=$(curl -s -u mennokonijn@gmail.com:${{ secrets.JIRA_TOKEN }} \
+            "https://mennokonijn.atlassian.net/rest/agile/1.0/board/1/sprint?state=active" | jq '.values[0]')
+          
           sprint_id=$(echo "$active_sprint" | jq -r '.id')
           sprint_name=$(echo "$active_sprint" | jq -r '.name')
           start_date=$(echo "$active_sprint" | jq -r '.startDate' | cut -d'T' -f1)
           end_date=$(echo "$active_sprint" | jq -r '.endDate' | cut -d'T' -f1)
-
+          
           if [ -z "$start_date" ] || [ -z "$end_date" ]; then
             echo "Sprint dates not found. Exiting early."
             exit 1
           fi
-
+          
           echo "Active sprint: $sprint_name (ID: $sprint_id)"
           echo "Start: $start_date"
           echo "End:   $end_date"
-
+          
           echo "Fetching security incidents created during sprint timeframe..."
-
-          incidents=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
-            -G --data-urlencode "jql=labels in (\"security-incident\", \"vulnerability\") AND created >= \"$start_date\" AND created <= \"$end_date\"" \
-            "${{ secrets.JIRA_URL }}/rest/api/2/search?fields=key,summary,created")
-
+          
+          incidents=$(curl -s -u mennokonijn@gmail.com:${{ secrets.JIRA_TOKEN }} \
+            -G --data-urlencode "jql=labels in (\"security_incident\") AND created >= \"$start_date\" AND created <= \"$end_date\"" \
+            "https://mennokonijn.atlassian.net/rest/api/2/search?fields=key,summary,created")
+          
           echo "$incidents" > security_incidents.json
 
       - name: Send Security Incidents to API
@@ -251,10 +293,10 @@ jobs:
       - name: Fetch JIRA Bugs
         run: |
           echo "Fetching issues of type 'Bug' from JIRA..."
-          bugs=$(curl -s -u ${{ secrets.JIRA_EMAIL }}:${{ secrets.JIRA_TOKEN }} \
+          bugs=$(curl -s -u mennokonijn@gmail.com:${{ secrets.JIRA_TOKEN }} \
             -G --data-urlencode "jql=issuetype=Bug" \
-            "${{ secrets.JIRA_URL }}/rest/api/2/search?fields=key,summary,created")
-
+            "https://mennokonijn.atlassian.net/rest/api/2/search?fields=key,summary,created")
+          
           echo "$bugs" > jira_bugs.json
 
       - name: Count LOC for Defect Density
@@ -262,7 +304,7 @@ jobs:
           echo "Counting lines of code in ./src..."
           loc=$(find ./src -type f \( -name '*.ts' -o -name '*.js' -o -name '*.tsx' -o -name '*.jsx' \) | xargs wc -l | tail -n 1 | awk '{print $1}')
           kloc=$(echo "scale=2; $loc / 1000" | bc)
-
+          
           echo "{ \"loc\": $loc, \"kloc\": $kloc }" > loc.json
 
       - name: Merge Defect Density Inputs
@@ -291,3 +333,76 @@ jobs:
             -H 'X-Tool-Name: Language-Impact' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
             --data @languages.json
+
+      - name: Calculate Deployment Frequency
+        run: |
+          jq -r '.[].created_at' deployments.json | cut -d'T' -f1 | sort | uniq -c |
+          jq -Rn '
+            [inputs
+             | capture("(?<count>\\d+) (?<date>\\d{4}-\\d{2}-\\d{2})")
+             | {date: .date, count: (.count | tonumber)}]' > deployment_frequency.json
+
+      - name: Send Deployment Frequency to API
+        run: |
+          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+            -H 'Content-Type: application/json' \
+            -H 'X-Tool-Name: Deployment-Frequency' \
+            -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
+            --data @deployment_frequency.json
+
+      - name: Calculate Deployment Time
+        run: |
+          echo "[]" > deployment_time.json
+          jq -c '.[]' deployments.json | while read -r deployment; do
+            sha=$(echo "$deployment" | jq -r '.sha')
+            deploy_time=$(echo "$deployment" | jq -r '.created_at')
+          
+            commit_info=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              https://api.github.com/repos/${{ github.repository }}/commits/$sha)
+            commit_time=$(echo "$commit_info" | jq -r '.commit.committer.date')
+          
+            deploy_epoch=$(date -d "$deploy_time" +%s)
+            commit_epoch=$(date -d "$commit_time" +%s)
+            lead_time_sec=$((deploy_epoch - commit_epoch))
+            lead_time_hr=$(echo "scale=2; $lead_time_sec / 3600" | bc)
+          
+            jq --arg sha "$sha" --argjson hrs "$lead_time_hr" \
+              '. += [{"sha": $sha, "lead_time_hours": $hrs}]' deployment_time.json > tmp.json && mv tmp.json deployment_time.json
+          done
+
+      - name: Send Deployment Time to API
+        run: |
+          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+            -H 'Content-Type: application/json' \
+            -H 'X-Tool-Name: Deployment-Time' \
+            -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
+            --data @deployment_time.json
+
+      - name: Calculate MTTR
+        run: |
+          echo "[]" > mttr.json
+          jq -r '.[].id' deployments.json | while read -r id; do
+            statuses=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              https://api.github.com/repos/${{ github.repository }}/deployments/$id/statuses)
+          
+            failed=$(echo "$statuses" | jq -r '[.[] | select(.state == "failure")][0].created_at')
+            success=$(echo "$statuses" | jq -r '[.[] | select(.state == "success")][0].created_at')
+          
+            if [[ "$failed" != "null" && "$success" != "null" ]]; then
+              fail_epoch=$(date -d "$failed" +%s)
+              success_epoch=$(date -d "$success" +%s)
+              delta=$((success_epoch - fail_epoch))
+              minutes=$(echo "scale=2; $delta / 60" | bc)
+          
+              jq --arg id "$id" --argjson m "$minutes" \
+                '. += [{"deployment_id": $id, "mttr_minutes": $m}]' mttr.json > tmp.json && mv tmp.json mttr.json
+            fi
+          done
+
+      - name: Send MTTR to API
+        run: |
+          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+            -H 'Content-Type: application/json' \
+            -H 'X-Tool-Name: MTTR' \
+            -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
+            --data @mttr.json
