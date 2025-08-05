@@ -37,13 +37,13 @@ jobs:
             | jq '[.workflow_runs[] | select(.name == "Simulate Deployment History")]' \
             > workflow_runs.json
 
-      - name: Start Express App
+      - name: Start App
         run: |
           PORT=8080 npm run start &
 
       - name: Wait for app to be ready
         run: |
-          sleep 10
+          sleep 15
 
       - name: Run OWASP ZAP Baseline Scan
         run: |
@@ -59,11 +59,23 @@ jobs:
 
       - name: Send ZAP results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: ZAP' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
             --data @zap-report.json
+
+      - name: Check for outdated npm packages
+        run: |
+          npm outdated --json > outdated.json || true
+
+      - name: Send Outdated Packages to API
+        run: |
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
+            -H 'Content-Type: application/json' \
+            -H 'X-Tool-Name: Outdated-Packages' \
+            -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
+            --data @outdated.json
 
       - name: Install Depcheck
         run: |
@@ -72,10 +84,11 @@ jobs:
       - name: Run Depcheck
         run: |
           depcheck --json > depcheck-results.json || true
+        continue-on-error: true
 
       - name: Send Depcheck results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Depcheck' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -99,7 +112,7 @@ jobs:
 
       - name: Send GitLeaks results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: GitLeaks' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -108,10 +121,11 @@ jobs:
       - name: Run Jest Tests
         run: |
           npx jest --coverage --outputFile=jest-results.json --json
+        continue-on-error: true
 
       - name: Send Jest results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jest' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -127,7 +141,8 @@ jobs:
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
             -Dsonar.sources=src \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+        continue-on-error: true
 
       - name: Wait for SonarQube Analysis to Complete
         run: |
@@ -142,12 +157,13 @@ jobs:
       - name: Fetch SonarQube Metrics
         run: |
           curl -s -u ${{ secrets.SONAR_TOKEN }}: \
-            "${{ secrets.SONAR_HOST_URL }}/api/measures/component?component=${{ secrets.SONAR_PROJECT_KEY }}&metricKeys=code_smells,complexity,cognitive_complexity,duplicated_lines_density,coverage" \
+            "${{ secrets.SONAR_HOST_URL }}/api/measures/component?component=${{ secrets.SONAR_PROJECT_KEY }}&metricKeys=functions,ncloc,code_smells,cognitive_complexity,coverage,complexity,duplicated_lines_density" \
             -o sonar-results.json
+        continue-on-error: true
 
       - name: Send SonarQube results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: SonarQube' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -157,21 +173,14 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Install CycloneDX SBOM Generator
+      - name: Run Trivy scan with SBOM, CVEs, and licenses
         run: |
-          npm install --save-dev @cyclonedx/cyclonedx-npm
-
-      - name: Generate SBOM (CycloneDX JSON)
-        run: |
-          npx cyclonedx-npm --output-format json > bom.json
-
-      - name: Run Trivy on SBOM (licenses + CVEs)
-        run: |
-          trivy sbom --scanners vuln,license --format json --output trivy-results.json bom.json
+          trivy fs --scanners vuln,license --format cyclonedx --output trivy-results.json .
+        continue-on-error: true
 
       - name: Send Trivy results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Trivy' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -226,10 +235,11 @@ jobs:
           done
           
           echo "$results" > sprint_points.json
+        continue-on-error: true
 
       - name: Send Sprint Points to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jira-SprintPoints' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -244,10 +254,11 @@ jobs:
             "https://mennokonijn.atlassian.net/rest/api/2/search?fields=key,summary,labels")
           
           echo "$epics" > epics.json
+        continue-on-error: true
 
       - name: Send Epics to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jira-Security-Epics' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -277,14 +288,15 @@ jobs:
           echo "Fetching security incidents created during sprint timeframe..."
           
           incidents=$(curl -s -u mennokonijn@gmail.com:${{ secrets.JIRA_TOKEN }} \
-            -G --data-urlencode "jql=labels in (\"security_incident\") AND created >= \"$start_date\" AND created <= \"$end_date\"" \
+            -G --data-urlencode "jql=labels in (\"security-incident\") AND created >= \"$start_date\" AND created <= \"$end_date\"" \
             "https://mennokonijn.atlassian.net/rest/api/2/search?fields=key,summary,created")
           
           echo "$incidents" > security_incidents.json
+        continue-on-error: true
 
       - name: Send Security Incidents to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jira-Security-Incidents' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -306,6 +318,7 @@ jobs:
           kloc=$(echo "scale=2; $loc / 1000" | bc)
           
           echo "{ \"loc\": $loc, \"kloc\": $kloc }" > loc.json
+        continue-on-error: true
 
       - name: Merge Defect Density Inputs
         run: |
@@ -313,7 +326,7 @@ jobs:
 
       - name: Send Defect Density Data to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jira-Defect-Density' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -325,10 +338,11 @@ jobs:
           curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/languages \
             -o languages.json
+        continue-on-error: true
 
       - name: Send Language Energy Impact to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Language-Impact' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -341,10 +355,11 @@ jobs:
             [inputs
              | capture("(?<count>\\d+) (?<date>\\d{4}-\\d{2}-\\d{2})")
              | {date: .date, count: (.count | tonumber)}]' > deployment_frequency.json
+        continue-on-error: true
 
       - name: Send Deployment Frequency to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Deployment-Frequency' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -369,10 +384,11 @@ jobs:
             jq --arg sha "$sha" --argjson hrs "$lead_time_hr" \
               '. += [{"sha": $sha, "lead_time_hours": $hrs}]' deployment_time.json > tmp.json && mv tmp.json deployment_time.json
           done
+        continue-on-error: true
 
       - name: Send Deployment Time to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Deployment-Time' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -398,10 +414,11 @@ jobs:
                 '. += [{"deployment_id": $id, "mttr_minutes": $m}]' mttr.json > tmp.json && mv tmp.json mttr.json
             fi
           done
+        continue-on-error: true
 
       - name: Send MTTR to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: MTTR' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
