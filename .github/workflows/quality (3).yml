@@ -159,7 +159,7 @@ jobs:
 
       - name: Run Trivy scan with SBOM, CVEs, and licenses
         run: |
-          trivy fs --scanners vuln,license --format cyclonedx --output trivy-results.json .
+          trivy fs --scanners vuln,license --include-dev-deps --format cyclonedx --output trivy-results.json .
         continue-on-error: true
 
       - name: Send Trivy results to API
