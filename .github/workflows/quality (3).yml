@@ -59,7 +59,7 @@ jobs:
 
       - name: Send ZAP results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: ZAP' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -75,7 +75,7 @@ jobs:
 
       - name: Send Depcheck results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Depcheck' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -99,7 +99,7 @@ jobs:
 
       - name: Send GitLeaks results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: GitLeaks' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -111,7 +111,7 @@ jobs:
 
       - name: Send Jest results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jest' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -147,7 +147,7 @@ jobs:
 
       - name: Send SonarQube results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: SonarQube' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -164,7 +164,7 @@ jobs:
 
       - name: Send Trivy results to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Trivy' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -222,7 +222,7 @@ jobs:
 
       - name: Send Sprint Points to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jira-SprintPoints' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -240,7 +240,7 @@ jobs:
 
       - name: Send Epics to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jira-Security-Epics' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -277,7 +277,7 @@ jobs:
 
       - name: Send Security Incidents to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jira-Security-Incidents' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -306,7 +306,7 @@ jobs:
 
       - name: Send Defect Density Data to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Jira-Defect-Density' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -321,7 +321,7 @@ jobs:
 
       - name: Send Language Energy Impact to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Language-Impact' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -337,7 +337,7 @@ jobs:
 
       - name: Send Deployment Frequency to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Deployment-Frequency' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -365,7 +365,7 @@ jobs:
 
       - name: Send Deployment Time to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: Deployment-Time' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
@@ -394,7 +394,7 @@ jobs:
 
       - name: Send MTTR to API
         run: |
-          curl -X POST https://6d888b3b7a17.ngrok-free.app/api/metrics \
+          curl -X POST https://d7f49f96a172.ngrok-free.app/api/metrics \
             -H 'Content-Type: application/json' \
             -H 'X-Tool-Name: MTTR' \
             -H 'X-Repo-Name: https://github.com/mennokonijn/unit-test-examples' \
